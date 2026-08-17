@@ -48,10 +48,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.app.ui.theme.AppTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+private const val ROUTE_HOME = "home"
+private const val ROUTE_NEW_CONSULTATION = "new_consultation"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,7 +65,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AppTheme {
-                HomeScreen()
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = ROUTE_HOME) {
+                    composable(ROUTE_HOME) {
+                        HomeScreen(
+                            onNewConsultationClick = { navController.navigate(ROUTE_NEW_CONSULTATION) }
+                        )
+                    }
+                    composable(ROUTE_NEW_CONSULTATION) {
+                        NewConsultationScreen(
+                            onBackClick = { navController.popBackStack() }
+                        )
+                    }
+                }
             }
         }
     }
@@ -67,7 +85,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(onNewConsultationClick: () -> Unit = {}) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
@@ -162,7 +180,7 @@ fun HomeScreen() {
             )
             Spacer(modifier = Modifier.height(48.dp))
             Button(
-                onClick = { /* 아직 동작 없음 */ },
+                onClick = onNewConsultationClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

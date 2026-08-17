@@ -13,6 +13,7 @@ private val ConsultColorScheme = lightColorScheme(
     secondaryContainer = ConsultSecondaryContainer,
     background = Color.White,
     surface = ConsultSurface,
+    surfaceContainer = ConsultSurfaceContainer,
     onSurface = ConsultOnSurface,
     onSurfaceVariant = ConsultOnSurfaceVariant,
     outline = ConsultOutline,
