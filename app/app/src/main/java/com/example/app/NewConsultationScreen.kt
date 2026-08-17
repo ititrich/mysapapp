@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -42,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -52,7 +54,18 @@ import com.example.app.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewConsultationScreen(onBackClick: () -> Unit = {}) {
+fun NewConsultationScreen(
+    onBackClick: () -> Unit = {},
+    onSave: (
+        name: String,
+        phone: String,
+        email: String,
+        details: String,
+        isRegistered: Boolean,
+        hasBook: Boolean
+    ) -> Unit = { _, _, _, _, _, _ -> }
+) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -89,7 +102,21 @@ fun NewConsultationScreen(onBackClick: () -> Unit = {}) {
         bottomBar = {
             Surface(color = Color.White, tonalElevation = 2.dp) {
                 Button(
-                    onClick = { /* 아직 동작 없음 */ },
+                    onClick = {
+                        if (name.isBlank()) {
+                            Toast.makeText(context, "이름을 입력해주세요", Toast.LENGTH_SHORT).show()
+                        } else {
+                            onSave(
+                                name.trim(),
+                                phone.trim(),
+                                email.trim(),
+                                details.trim(),
+                                registrationStatus == 0,
+                                bookStatus == 0
+                            )
+                            Toast.makeText(context, "저장되었습니다", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(24.dp)

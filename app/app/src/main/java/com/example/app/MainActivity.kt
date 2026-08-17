@@ -58,6 +58,7 @@ import java.util.Locale
 
 private const val ROUTE_HOME = "home"
 private const val ROUTE_NEW_CONSULTATION = "new_consultation"
+private const val ROUTE_CONSULTATION_LIST = "consultation_list"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,15 +67,28 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppTheme {
                 val navController = rememberNavController()
+                val repository = remember { ConsultationRepository() }
                 NavHost(navController = navController, startDestination = ROUTE_HOME) {
                     composable(ROUTE_HOME) {
                         HomeScreen(
-                            onNewConsultationClick = { navController.navigate(ROUTE_NEW_CONSULTATION) }
+                            onNewConsultationClick = { navController.navigate(ROUTE_NEW_CONSULTATION) },
+                            onConsultationListClick = { navController.navigate(ROUTE_CONSULTATION_LIST) }
                         )
                     }
                     composable(ROUTE_NEW_CONSULTATION) {
                         NewConsultationScreen(
-                            onBackClick = { navController.popBackStack() }
+                            onBackClick = { navController.popBackStack() },
+                            onSave = { name, phone, email, details, isRegistered, hasBook ->
+                                repository.add(name, phone, email, details, isRegistered, hasBook)
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                    composable(ROUTE_CONSULTATION_LIST) {
+                        ConsultationListScreen(
+                            consultations = repository.consultations,
+                            onBackClick = { navController.popBackStack() },
+                            onAddClick = { navController.navigate(ROUTE_NEW_CONSULTATION) }
                         )
                     }
                 }
@@ -85,7 +99,10 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onNewConsultationClick: () -> Unit = {}) {
+fun HomeScreen(
+    onNewConsultationClick: () -> Unit = {},
+    onConsultationListClick: () -> Unit = {}
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
@@ -196,7 +213,7 @@ fun HomeScreen(onNewConsultationClick: () -> Unit = {}) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedButton(
-                onClick = { /* 아직 동작 없음 */ },
+                onClick = onConsultationListClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
