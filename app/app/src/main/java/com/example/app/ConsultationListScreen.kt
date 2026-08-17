@@ -1,7 +1,9 @@
 package com.example.app
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +22,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -29,8 +36,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,41 +58,101 @@ import com.example.app.ui.theme.ConsultSurfaceContainerHigh
 fun ConsultationListScreen(
     consultations: List<Consultation>,
     onBackClick: () -> Unit = {},
-    onAddClick: () -> Unit = {}
+    onAddClick: () -> Unit = {},
+    onItemClick: (Long) -> Unit = {},
+    onDeleteSelected: (Set<Long>) -> Unit = {}
 ) {
+    var isSelectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(setOf<Long>()) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    fun exitSelectionMode() {
+        isSelectionMode = false
+        selectedIds = emptySet()
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "상담 목록",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 20.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "뒤로가기",
-                            tint = MaterialTheme.colorScheme.onSurface
+            if (isSelectionMode) {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            text = "${selectedIds.size}개 선택됨",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.White
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { exitSelectionMode() }) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "선택 취소",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { if (selectedIds.isNotEmpty()) showDeleteConfirm = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "삭제",
+                                tint = if (selectedIds.isNotEmpty()) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.outline
+                                }
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.White
+                    )
                 )
-            )
+            } else {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            text = "상담 목록",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "뒤로가기",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    actions = {
+                        if (consultations.isNotEmpty()) {
+                            TextButton(onClick = { isSelectionMode = true }) {
+                                Text(text = "선택삭제", color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.White
+                    )
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddClick,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = Color.White
-            ) {
-                Icon(imageVector = Icons.Filled.Add, contentDescription = "새 상담 등록")
+            if (!isSelectionMode) {
+                FloatingActionButton(
+                    onClick = onAddClick,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = Color.White
+                ) {
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = "새 상담 등록")
+                }
             }
         }
     ) { innerPadding ->
@@ -100,12 +172,14 @@ fun ConsultationListScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = { /* 아직 동작 없음 */ }) {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = "검색",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                if (!isSelectionMode) {
+                    IconButton(onClick = { /* 아직 동작 없음 */ }) {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = "검색",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -120,16 +194,66 @@ fun ConsultationListScreen(
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(items = consultations, key = { it.id }) { consultation ->
-                        ConsultationCard(consultation)
+                        ConsultationCard(
+                            consultation = consultation,
+                            isSelectionMode = isSelectionMode,
+                            isSelected = consultation.id in selectedIds,
+                            onClick = {
+                                if (isSelectionMode) {
+                                    selectedIds = if (consultation.id in selectedIds) {
+                                        selectedIds - consultation.id
+                                    } else {
+                                        selectedIds + consultation.id
+                                    }
+                                } else {
+                                    onItemClick(consultation.id)
+                                }
+                            },
+                            onLongClick = {
+                                if (!isSelectionMode) {
+                                    isSelectionMode = true
+                                    selectedIds = setOf(consultation.id)
+                                }
+                            }
+                        )
                     }
                 }
             }
         }
     }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("상담 삭제") },
+            text = { Text("선택한 ${selectedIds.size}개 상담을 삭제할까요? 삭제하면 되돌릴 수 없습니다.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteSelected(selectedIds)
+                    showDeleteConfirm = false
+                    exitSelectionMode()
+                }) {
+                    Text("삭제", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ConsultationCard(consultation: Consultation) {
+private fun ConsultationCard(
+    consultation: Consultation,
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -139,7 +263,19 @@ private fun ConsultationCard(consultation: Consultation) {
                 color = MaterialTheme.colorScheme.outlineVariant,
                 shape = RoundedCornerShape(8.dp)
             )
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        if (isSelectionMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = null,
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxHeight()

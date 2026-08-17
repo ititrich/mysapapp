@@ -48,9 +48,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.app.ui.theme.AppTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -59,6 +61,10 @@ import java.util.Locale
 private const val ROUTE_HOME = "home"
 private const val ROUTE_NEW_CONSULTATION = "new_consultation"
 private const val ROUTE_CONSULTATION_LIST = "consultation_list"
+private const val ROUTE_CONSULTATION_DETAIL = "consultation_detail/{id}"
+private const val ARG_CONSULTATION_ID = "id"
+
+private fun consultationDetailRoute(id: Long) = "consultation_detail/$id"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,8 +94,31 @@ class MainActivity : ComponentActivity() {
                         ConsultationListScreen(
                             consultations = repository.consultations,
                             onBackClick = { navController.popBackStack() },
-                            onAddClick = { navController.navigate(ROUTE_NEW_CONSULTATION) }
+                            onAddClick = { navController.navigate(ROUTE_NEW_CONSULTATION) },
+                            onItemClick = { id -> navController.navigate(consultationDetailRoute(id)) },
+                            onDeleteSelected = { ids -> repository.remove(ids) }
                         )
+                    }
+                    composable(
+                        route = ROUTE_CONSULTATION_DETAIL,
+                        arguments = listOf(navArgument(ARG_CONSULTATION_ID) { type = NavType.LongType })
+                    ) { backStackEntry ->
+                        val id = backStackEntry.arguments?.getLong(ARG_CONSULTATION_ID) ?: -1L
+                        val consultation = repository.consultations.find { it.id == id }
+                        if (consultation != null) {
+                            NewConsultationScreen(
+                                consultation = consultation,
+                                onBackClick = { navController.popBackStack() },
+                                onSave = { name, phone, email, details, isRegistered, hasBook ->
+                                    repository.update(id, name, phone, email, details, isRegistered, hasBook)
+                                    navController.popBackStack()
+                                },
+                                onDelete = {
+                                    repository.remove(setOf(id))
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
                     }
                 }
             }

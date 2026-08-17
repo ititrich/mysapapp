@@ -35,4 +35,30 @@ class ConsultationRepository {
             Consultation(nextId++, name, phone, email, details, isRegistered, hasBook)
         )
     }
+
+    fun update(
+        id: Long,
+        name: String,
+        phone: String,
+        email: String,
+        details: String,
+        isRegistered: Boolean,
+        hasBook: Boolean
+    ) {
+        val index = consultations.indexOfFirst { it.id == id }
+        if (index != -1) {
+            consultations[index] = consultations[index].copy(
+                name = name,
+                phone = phone,
+                email = email,
+                details = details,
+                isRegistered = isRegistered,
+                hasBook = hasBook
+            )
+        }
+    }
+
+    fun remove(ids: Set<Long>) {
+        consultations.removeAll { it.id in ids }
+    }
 }

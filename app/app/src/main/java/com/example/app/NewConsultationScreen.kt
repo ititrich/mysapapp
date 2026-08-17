@@ -20,6 +20,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -33,6 +35,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,6 +58,7 @@ import com.example.app.ui.theme.AppTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewConsultationScreen(
+    consultation: Consultation? = null,
     onBackClick: () -> Unit = {},
     onSave: (
         name: String,
@@ -63,15 +67,17 @@ fun NewConsultationScreen(
         details: String,
         isRegistered: Boolean,
         hasBook: Boolean
-    ) -> Unit = { _, _, _, _, _, _ -> }
+    ) -> Unit = { _, _, _, _, _, _ -> },
+    onDelete: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var details by remember { mutableStateOf("") }
-    var registrationStatus by remember { mutableIntStateOf(1) }
-    var bookStatus by remember { mutableIntStateOf(1) }
+    var name by remember { mutableStateOf(consultation?.name ?: "") }
+    var phone by remember { mutableStateOf(consultation?.phone ?: "") }
+    var email by remember { mutableStateOf(consultation?.email ?: "") }
+    var details by remember { mutableStateOf(consultation?.details ?: "") }
+    var registrationStatus by remember { mutableIntStateOf(if (consultation?.isRegistered == true) 0 else 1) }
+    var bookStatus by remember { mutableIntStateOf(if (consultation?.hasBook == true) 0 else 1) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -79,7 +85,7 @@ fun NewConsultationScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "새 상담 등록",
+                        text = if (consultation != null) "상담 수정" else "새 상담 등록",
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 20.sp,
                         color = MaterialTheme.colorScheme.onSurface
@@ -92,6 +98,17 @@ fun NewConsultationScreen(
                             contentDescription = "뒤로가기",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
+                    }
+                },
+                actions = {
+                    if (onDelete != null) {
+                        IconButton(onClick = { showDeleteConfirm = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "삭제",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -222,6 +239,27 @@ fun NewConsultationScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("상담 삭제") },
+            text = { Text("이 상담을 삭제할까요? 삭제하면 되돌릴 수 없습니다.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete?.invoke()
+                }) {
+                    Text("삭제", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("취소")
+                }
+            }
+        )
     }
 }
 
